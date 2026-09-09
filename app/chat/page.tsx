@@ -28,9 +28,22 @@ export default function ChatPage() {
         body: JSON.stringify({ question }),
       });
 
-      const data = await res.json();
+      const responseText = await res.text();
+      let data: { answer?: string; sources?: Source[]; error?: string } = {};
 
-      setAnswer(data.answer);
+      if (responseText) {
+        try {
+          data = JSON.parse(responseText);
+        } catch {
+          data = { error: 'The server returned an invalid response.' };
+        }
+      }
+
+      if (!res.ok) {
+        throw new Error(data.error || `Request failed with status ${res.status}`);
+      }
+
+      setAnswer(data.answer || 'No answer was returned.');
       setSources(data.sources || []);
     } catch (err) {
       setAnswer('Something went wrong — please try again.');
