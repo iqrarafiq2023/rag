@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const text = await extractText(buffer);
+    const { text } = await extractText(buffer);
     const chunks = chunkText(text);
 
     let stored = 0;
