@@ -1,13 +1,24 @@
 
 import { supabase } from '@/lib/supabase';
 import { genAI } from '@/lib/gemini';
+import type { EmbedContentRequest } from '@google/generative-ai';
+
+// export async function embedText(text: string): Promise<number[]> {
+//   const model = genAI.getGenerativeModel({ model: 'gemini-embedding-001' });
+//   const result = await model.embedContent({
+//     content: { role: 'user', parts: [{ text }] },
+//     outputDimensionality: 768,
+//   });
+//   return result.embedding.values;
+// }
+
 
 export async function embedText(text: string): Promise<number[]> {
   const model = genAI.getGenerativeModel({ model: 'gemini-embedding-001' });
   const result = await model.embedContent({
     content: { role: 'user', parts: [{ text }] },
     outputDimensionality: 768,
-  });
+  } as EmbedContentRequest & { outputDimensionality: number });
   return result.embedding.values;
 }
 
