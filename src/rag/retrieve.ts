@@ -14,6 +14,7 @@ async function embedQuery(question: string): Promise<number[]> {
     const model = genAI.getGenerativeModel({ model: 'gemini-embedding-001' });
     const result = await model.embedContent({
         content: { role: 'user', parts: [{ text: question }] },
+        outputDimensionality: 768,
     } as EmbedContentRequest & { outputDimensionality: number });
     return result.embedding.values;
 }
