@@ -39,6 +39,16 @@ export async function POST(req: NextRequest) {
       stored++;
     }
 
+    const { error: docError } = await supabase.from('documents').insert({
+      filename: file.name,
+      chunk_count: stored,
+    });
+
+    if (docError) {
+      console.error('Failed to record document:', docError.message);
+      // don't fail the whole request over this — chunks are already stored successfully
+    }
+
     return NextResponse.json({
       message: 'Upload processed',
       chunksStored: stored,
