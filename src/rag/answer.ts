@@ -49,10 +49,10 @@ export async function askQuestion(question: string): Promise<AnswerResult> {
 
   const model = genAI.getGenerativeModel({ model: 'gemini-3.6-flash' });
   const prompt = buildPrompt(question, chunks);
-
+console.log('Prompt sent to model:', prompt);
   const result = await model.generateContent(prompt);
   const answer = result.response.text();
-
+console.log('Model response:', answer);
   const sources = chunks.map((c, i) => ({
     ref: i + 1,
     source_file: c.source_file,
