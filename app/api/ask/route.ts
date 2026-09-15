@@ -9,16 +9,21 @@ interface AskRequest {
 
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json()) as AskRequest;
+    // const body = (await req.json()) as AskRequest;
+ const { question, documentFilter } = await req.json();
 
-    if (typeof body.question !== 'string' || !body.question.trim()) {
-      return NextResponse.json(
-        { error: 'A question is required' },
-        { status: 400 },
-      );
-    }
+  if (!question || typeof question !== 'string') {
+    return NextResponse.json({ error: 'Question is required' }, { status: 400 });
+  }
 
-    const result = await askQuestion(body.question.trim());
+    // if (typeof body.question !== 'string' || !body.question.trim()) {
+    //   return NextResponse.json(
+    //     { error: 'A question is required' },
+    //     { status: 400 },
+    //   );
+    // }
+
+    const result = await askQuestion(question, documentFilter);
     return NextResponse.json(result);
   } catch (error) {
     console.error('Question failed:', error);

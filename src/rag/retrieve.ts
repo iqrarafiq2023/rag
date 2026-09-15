@@ -39,23 +39,44 @@ async function embedQuery(question: string): Promise<number[]> {
     return embedding;
 }
 
+// export async function retrieveChunks(
+//     question: string,
+//     matchCount = 5,
+// ): Promise<RetrievedChunk[]> {
+//     const queryEmbedding = await embedQuery(question);
+//     console.log('QUERY VECTOR LENGTH:', queryEmbedding.length);
+//     const { data, error } = await supabase.rpc('match_chunks', {
+//         query_embedding: queryEmbedding,
+//         match_count: matchCount,
+//     });
+//     console.log('Retrieved chunks:', data);
+//     console.log('Retrieved chunks error:', error);
+
+//     if (error) {
+//         console.error('Retrieval failed:', JSON.stringify(error, null, 2));
+//         return [];
+//     }
+
+//     return (data ?? []) as RetrievedChunk[];
+// }
+
 export async function retrieveChunks(
-    question: string,
-    matchCount = 5,
+  question: string,
+  matchCount = 5,
+  documentFilter?: string
 ): Promise<RetrievedChunk[]> {
-    const queryEmbedding = await embedQuery(question);
-    console.log('QUERY VECTOR LENGTH:', queryEmbedding.length);
-    const { data, error } = await supabase.rpc('match_chunks', {
-        query_embedding: queryEmbedding,
-        match_count: matchCount,
-    });
-    console.log('Retrieved chunks:', data);
-    console.log('Retrieved chunks error:', error);
+  const queryEmbedding = await embedQuery(question);
 
-    if (error) {
-        console.error('Retrieval failed:', JSON.stringify(error, null, 2));
-        return [];
-    }
+  const { data, error } = await supabase.rpc('match_chunks', {
+    query_embedding: queryEmbedding,
+    match_count: matchCount,
+    filter_source: documentFilter ?? null,
+  });
 
-    return (data ?? []) as RetrievedChunk[];
+  if (error) {
+    console.error('Retrieval failed:', JSON.stringify(error, null, 2));
+    return [];
+  }
+
+  return (data ?? []) as RetrievedChunk[];
 }

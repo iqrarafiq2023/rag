@@ -26,7 +26,7 @@ export default function ChatPage() {
   const [question, setQuestion] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
-
+  const [selectedDoc, setSelectedDoc] = useState<string | null>(null); // null = search all documents
   // Documents
   const [documents, setDocuments] = useState<Document[]>([]);
   const [documentsLoading, setDocumentsLoading] = useState(true);
@@ -187,6 +187,7 @@ export default function ChatPage() {
         },
         body: JSON.stringify({
           question: trimmedQuestion,
+          documentFilter: selectedDoc, // ADD THIS
         }),
       });
 
@@ -330,11 +331,10 @@ export default function ChatPage() {
 
             {uploadStatus && (
               <p
-                className={`mt-2 text-xs ${
-                  uploadStatus.includes('successfully')
-                    ? 'text-green-600'
-                    : 'text-red-500'
-                }`}
+                className={`mt-2 text-xs ${uploadStatus.includes('successfully')
+                  ? 'text-green-600'
+                  : 'text-red-500'
+                  }`}
               >
                 {uploadStatus}
               </p>
@@ -379,49 +379,51 @@ export default function ChatPage() {
             ) : (
               <div className="space-y-1">
 
-                {documents.map((doc) => (
-                  <div
-                    key={doc.id}
-                    className="rounded-lg px-3 py-3 transition hover:bg-gray-50"
-                  >
-                    <div className="flex items-start gap-3">
+                {documents.map((doc) => {
+                  const isSelected = selectedDoc === doc.filename;
 
-                      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-gray-100 text-gray-500">
-                        <svg
-                          width="15"
-                          height="15"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.7"
+                  return (
+                    <div
+                      key={doc.id}
+                      onClick={() =>
+                        setSelectedDoc(isSelected ? null : doc.filename)
+                      }
+                      className={`cursor-pointer rounded-lg px-3 py-3 transition ${isSelected
+                        ? 'bg-gray-900 hover:bg-gray-800'
+                        : 'hover:bg-gray-50'
+                        }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div
+                          className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${isSelected
+                            ? 'bg-white/10 text-white'
+                            : 'bg-gray-100 text-gray-500'
+                            }`}
                         >
-                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                          <path d="M14 2v6h6" />
-                          <path d="M8 13h2M8 17h6" />
-                        </svg>
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                            <path d="M14 2v6h6" />
+                            <path d="M8 13h2M8 17h6" />
+                          </svg>
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <p
+                            title={doc.filename}
+                            className={`truncate text-sm font-medium ${isSelected ? 'text-white' : 'text-gray-700'
+                              }`}
+                          >
+                            {doc.filename}
+                          </p>
+
+                          <p className={`mt-1 text-xs ${isSelected ? 'text-gray-300' : 'text-gray-400'}`}>
+                            {doc.chunk_count} {doc.chunk_count === 1 ? 'chunk' : 'chunks'}
+                          </p>
+                        </div>
                       </div>
-
-                      <div className="min-w-0 flex-1">
-
-                        <p
-                          title={doc.filename}
-                          className="truncate text-sm font-medium text-gray-700"
-                        >
-                          {doc.filename}
-                        </p>
-
-                        <p className="mt-1 text-xs text-gray-400">
-                          {doc.chunk_count}{' '}
-                          {doc.chunk_count === 1
-                            ? 'chunk'
-                            : 'chunks'}
-                        </p>
-
-                      </div>
-
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
 
               </div>
             )}
@@ -724,7 +726,19 @@ export default function ChatPage() {
           <div className="sticky bottom-0 border-t border-gray-200 bg-[#fafafa]/95 px-4 py-4 backdrop-blur md:px-8">
 
             <div className="mx-auto max-w-4xl">
-
+              {selectedDoc && (
+                <div className="mb-2 flex items-center justify-between rounded-lg bg-gray-100 px-3 py-2 text-xs">
+                  <span className="text-gray-600">
+                    Asking only: <span className="font-medium text-gray-900">{selectedDoc}</span>
+                  </span>
+                  <button
+                    onClick={() => setSelectedDoc(null)}
+                    className="ml-2 font-medium text-gray-500 hover:text-gray-900"
+                  >
+                    Clear ✕
+                  </button>
+                </div>
+              )}
               <div className="rounded-2xl border border-gray-200 bg-white p-2 shadow-sm">
 
                 <div className="flex items-center gap-2">
