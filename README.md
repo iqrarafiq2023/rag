@@ -1,36 +1,157 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# RAG Document Q&A Agent
+
+A full-stack Retrieval-Augmented Generation (RAG) application that lets users upload PDF documents, automatically indexes them into a vector knowledge base, and answers natural-language questions about their content — with source citations and per-document filtering.
+
+**Live demo:** https://rag-dtnh.vercel.app/
+
+---
+
+## Overview
+
+Upload a PDF → the app extracts and chunks the text → each chunk is embedded and stored in a vector database → when a user asks a question, the app retrieves the most relevant chunks via semantic similarity search → an LLM generates a grounded answer, citing which source chunks it used.
+
+Built as a personal project to explore RAG architecture, TypeScript, vector search, and end-to-end AI application development.
+
+---
+
+## Features
+
+- 📄 **PDF upload** with automatic text extraction and chunking
+- 🧠 **Semantic search** via vector embeddings (Google Gemini) stored in Postgres (pgvector)
+- 💬 **Chat interface** for asking natural-language questions about uploaded documents
+- 🔗 **Source citations** — every answer references which document/chunk it came from
+- 🎯 **Per-document filtering** — scope questions to a single document or search across all of them
+- 📚 **Document library** — sidebar view of all uploaded documents with chunk counts
+- 🔄 **Retry logic** for transient LLM API failures (e.g. 503 errors under high demand)
+- ✅ **Automated tests** (Jest) for core chunking logic
+- 🚀 **CI pipeline** (GitHub Actions) — runs tests and type-checks on every push
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | Next.js (App Router), React, TypeScript, Tailwind CSS |
+| Backend | Next.js API Routes (Node.js runtime) |
+| Database | Supabase (Postgres + pgvector extension) |
+| Embeddings & LLM | Google Gemini API (`gemini-embedding-001`, `gemini-3.6-flash`) |
+| PDF Parsing | `unpdf` (serverless-compatible PDF text extraction) |
+| Testing | Jest |
+| CI/CD | GitHub Actions |
+| Hosting | Vercel |
+
+---
+
+## Architecture
+
+```
+Upload flow:
+  PDF → extractText() → chunkText() → embedText() → Supabase (document_chunks table)
+
+Query flow:
+  Question → embedQuery() → pgvector similarity search (match_chunks RPC)
+           → top-k relevant chunks → Gemini LLM (grounded prompt) → Answer + citations
+```
+
+### Database schema
+
+```sql
+create table documents (
+  id bigserial primary key,
+  filename text not null,
+  chunk_count int not null default 0,
+  uploaded_at timestamptz default now()
+);
+
+create table document_chunks (
+  id bigserial primary key,
+  source_file text not null,
+  chunk_text text not null,
+  embedding vector(768),
+  created_at timestamptz default now()
+);
+
+create index on document_chunks using ivfflat (embedding vector_cosine_ops);
+```
+
+Retrieval uses a Postgres function (`match_chunks`) that performs cosine similarity search, with an optional `filter_source` parameter to scope results to a single document.
+
+---
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 20+
+- A [Supabase](https://supabase.com) project (free tier) with the `vector` extension enabled
+- A [Google AI Studio](https://aistudio.google.com) API key (free tier)
+
+### Setup
+
+```bash
+git clone <your-repo-url>
+cd rag-agent-ui
+npm install
+```
+
+Create a `.env.local` file:
+
+```
+GEMINI_API_KEY=your_gemini_api_key
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_KEY=your_supabase_service_role_key
+```
+
+Run the SQL in `schema.sql` (or the block above) in your Supabase SQL editor to set up the tables and the `match_chunks` function.
+
+### Run locally
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Visit `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Run tests
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npx jest
+```
 
-## Learn More
+### Build for production
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run build
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## API Routes
 
-## Deploy on Vercel
+| Route | Method | Description |
+|---|---|---|
+| `/api/upload` | POST | Accepts a PDF file, extracts/chunks/embeds text, stores it |
+| `/api/ask` | POST | Accepts `{ question, documentFilter? }`, returns `{ answer, sources }` |
+| `/api/documents` | GET | Returns the list of uploaded documents |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Known Limitations
+
+- PDFs must contain a real text layer — scanned/image-based PDFs are not supported (no OCR)
+- No authentication — this is a single-user personal project, not multi-tenant
+- Gemini's free tier has rate limits; retry logic handles transient `503` errors but sustained high traffic may still fail
+
+## Possible Future Enhancements
+
+- Page-number-level citations (currently source is filename-only)
+- OCR support for scanned documents
+- Multi-user support with per-user document isolation
+- Docker containerization for platform-agnostic deployment
+
+---
+
+## License
+
+Personal project — built for learning and portfolio purposes.
